@@ -9,8 +9,7 @@ import {
   Circle,
 } from "lucide-react";
 import { useSelector } from "react-redux";
-
-const API_URL = "http://localhost:5000/api/v1/tasks";
+import { API_URL } from "../config/api";
 
 export default function Dashboard() {
   const { user } = useSelector((state) => state.auth);
@@ -18,6 +17,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
@@ -33,10 +33,18 @@ export default function Dashboard() {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const res = await axiosAuth.get(API_URL);
-      setTasks(res.data.data || res.data);
+      const res = await axiosAuth.get(`${API_URL}/api/v1/tasks`);
+
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data.data)
+        ? res.data.data
+        : [];
+
+      setTasks(data);
     } catch {
       setError("Failed to fetch tasks");
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -49,47 +57,72 @@ export default function Dashboard() {
   /* ================= CREATE ================= */
   const createTask = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || actionLoading) return;
+
+    setActionLoading(true);
+
+    const tempTask = {
+      _id: Date.now().toString(),
+      title,
+    };
+
+    // Optimistic UI
+    setTasks((prev) => [tempTask, ...prev]);
+    setTitle("");
 
     try {
-      const res = await axiosAuth.post(API_URL, { title });
-      setTasks([res.data.data || res.data, ...tasks]);
-      setTitle("");
+      const res = await axiosAuth.post(`${API_URL}/api/v1/tasks`, { title });
+      setTasks((prev) =>
+        prev.map((t) => (t._id === tempTask._id ? res.data.data || res.data : t))
+      );
     } catch {
+      setTasks((prev) => prev.filter((t) => t._id !== tempTask._id));
       setError("Failed to create task");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   /* ================= UPDATE ================= */
   const updateTask = async (id) => {
-    if (!editTitle.trim()) return;
+    if (!editTitle.trim() || actionLoading) return;
+
+    setActionLoading(true);
 
     try {
-      await axiosAuth.put(`${API_URL}/${id}`, { title: editTitle });
-      setTasks(
-        tasks.map((t) =>
-          t._id === id ? { ...t, title: editTitle } : t
-        )
+      await axiosAuth.put(`${API_URL}/api/v1/tasks/${id}`, {
+        title: editTitle,
+      });
+
+      setTasks((prev) =>
+        prev.map((t) => (t._id === id ? { ...t, title: editTitle } : t))
       );
+
       setEditingId(null);
       setEditTitle("");
     } catch {
       setError("Update failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   /* ================= DELETE ================= */
   const deleteTask = async (id) => {
+    if (actionLoading) return;
+
+    setActionLoading(true);
+
+    const backup = tasks;
+    setTasks((prev) => prev.filter((t) => t._id !== id));
+
     try {
-      await axiosAuth.delete(`${API_URL}/${id}`);
-      setTasks(tasks.filter((t) => t._id !== id));
-      setCompleted((prev) => {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      });
+      await axiosAuth.delete(`${API_URL}/api/v1/tasks/${id}`);
     } catch {
+      setTasks(backup);
       setError("Delete failed");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -135,7 +168,7 @@ export default function Dashboard() {
       </div>
 
       {/* ===== STATS ===== */}
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6 mb-10">
         {[
           { label: "Total Tasks", value: tasks.length },
           { label: "Completed", value: completedCount },
@@ -161,19 +194,20 @@ export default function Dashboard() {
             rows={2}
             className="flex-1 resize-none rounded-xl bg-black/40 border border-white/10
                        px-4 py-3 text-sm text-white placeholder-white/30
-                       focus:outline-none focus:border-green-400/60"
+                       focus:outline-none focus:border-purple-400/60"
           />
 
           <button
             type="submit"
-            className="flex items-center gap-2 h-[44px] px-4 rounded-lg
-                       bg-[#773397]
+            disabled={actionLoading}
+            className="flex items-center justify-center gap-2
+                       min-w-[90px] h-[44px]
+                       rounded-lg bg-purple-600
                        text-sm font-medium text-white
-                       
-                       
-                       transition shrink-0 cursor-pointer"
+                       hover:bg-purple-500
+                       transition cursor-pointer disabled:opacity-50"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             <span>Add</span>
           </button>
         </form>
@@ -188,12 +222,12 @@ export default function Dashboard() {
 
       {/* ===== TASK LIST ===== */}
       <div className="max-w-5xl mx-auto space-y-4">
-        <h2 className="text-lg font-semibold mb-2">Tasks</h2>
+        <h2 className="text-lg font-semibold">Tasks</h2>
 
         {loading && <p className="text-white/60">Loading tasks...</p>}
 
         {!loading && tasks.length === 0 && (
-          <p className="text-white/50">No tasks yet. Start by adding one</p>
+          <p className="text-white/50">No tasks yet. Start by adding one.</p>
         )}
 
         {tasks.map((task) => {
@@ -207,10 +241,9 @@ export default function Dashboard() {
             >
               <div className="flex items-start gap-4">
 
-                {/* Checkbox */}
                 <button
                   onClick={() => toggleComplete(task._id)}
-                  className="mt-0.5 shrink-0 cursor-pointer"
+                  className="cursor-pointer"
                 >
                   {isDone ? (
                     <CheckCircle className="text-emerald-400" size={20} />
@@ -219,33 +252,31 @@ export default function Dashboard() {
                   )}
                 </button>
 
-                {/* Task text */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   {editingId === task._id ? (
                     <textarea
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       rows={2}
                       className="w-full resize-none rounded-lg bg-black/40 border border-white/10
-                                 px-3 py-2 text-sm text-white
-                                 focus:outline-none focus:border-purple-400/60"
+                                 px-3 py-2 text-sm text-white"
                     />
                   ) : (
                     <p
-                      className={`text-sm whitespace-pre-wrap break-words leading-relaxed
-                      ${isDone ? "line-through text-white/40" : ""}`}
+                      className={`text-sm break-words ${
+                        isDone ? "line-through text-white/40" : ""
+                      }`}
                     >
                       {task.title}
                     </p>
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 shrink-0 ">
+                <div className="flex gap-3">
                   {editingId === task._id ? (
                     <button
                       onClick={() => updateTask(task._id)}
-                      className="text-emerald-400 text-sm hover:underline"
+                      className="text-emerald-400 text-sm cursor-pointer"
                     >
                       Save
                     </button>
@@ -255,7 +286,7 @@ export default function Dashboard() {
                         setEditingId(task._id);
                         setEditTitle(task.title);
                       }}
-                      className="text-white/60 hover:text-white cursor-pointer"
+                      className="cursor-pointer text-white/60 hover:text-white"
                     >
                       <Pencil size={16} />
                     </button>
@@ -263,11 +294,12 @@ export default function Dashboard() {
 
                   <button
                     onClick={() => deleteTask(task._id)}
-                    className="text-white/60 hover:text-red-400"
+                    className="cursor-pointer text-white/60 hover:text-red-400"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
+
               </div>
             </div>
           );

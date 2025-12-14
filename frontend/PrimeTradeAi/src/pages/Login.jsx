@@ -4,7 +4,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../slices/authSlice";
 import { ArrowLeft } from "lucide-react";
-
+import { API_URL } from "../config/api";
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -25,7 +25,7 @@ export default function Login() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/v1/auth/login",
+        `${API_URL}/api/v1/auth/login`,
         {
           email: form.email,
           password: form.password,

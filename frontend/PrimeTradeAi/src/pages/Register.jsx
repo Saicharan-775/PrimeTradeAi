@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ArrowLeft } from "lucide-react";
-
+import { API_URL } from "../config/api";
 export default function Register() {
   const navigate = useNavigate();
 
@@ -25,7 +25,7 @@ export default function Register() {
     setSuccess("");
 
     try {
-      await axios.post("http://localhost:5000/api/v1/auth/register", {
+      await axios.post(`${API_URL}/api/v1/auth/register`, {
         name: `${form.firstName} ${form.lastName}`,
         email: form.email,
         password: form.password,
@@ -157,15 +157,7 @@ export default function Register() {
           </Link>
         </p>
 
-        {/* Optional Home link */}
-        <div className="mt-4 text-center">
-          <Link
-            to="/"
-            className="text-xs text-white/40 hover:text-purple-400 transition"
-          >
-            ← Back to Home
-          </Link>
-        </div>
+       
       </div>
     </div>
   );
