@@ -147,7 +147,7 @@ export default function Login() {
             to="/register"
             className="text-purple-400 hover:text-purple-300 transition"
           >
-            Create one
+            Create  account
           </Link>
         </p>
       </div>
