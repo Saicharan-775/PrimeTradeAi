@@ -6,7 +6,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
-import NotFound from './pages/NotFound';
+import NotFound from "./pages/NotFound";
+
 /* ================= PROTECTED ROUTE ================= */
 function ProtectedRoute({ children }) {
   const { user } = useSelector((state) => state.auth);
@@ -20,20 +21,19 @@ function PublicRoute({ children }) {
 }
 
 function App() {
+  const { user } = useSelector((state) => state.auth);
+
   return (
     <Router>
       <Routes>
 
-        {/* PUBLIC (only when NOT logged in) */}
+        {/* ROOT */}
         <Route
           path="/"
-          element={
-            <PublicRoute>
-              <Landing />
-            </PublicRoute>
-          }
+          element={user ? <Navigate to="/dashboard" replace /> : <Landing />}
         />
 
+        {/* PUBLIC */}
         <Route
           path="/login"
           element={
@@ -61,7 +61,7 @@ function App() {
           }
         />
 
-        {/* PRIVATE (only when logged in) */}
+        {/* PRIVATE */}
         <Route
           path="/dashboard"
           element={
@@ -71,8 +71,14 @@ function App() {
           }
         />
 
-        {/* CATCH ALL */}
-           <Route path="*" element={<NotFound />} />
+        {/* NOT FOUND */}
+        <Route
+          path="*"
+          element={
+            user ? <Navigate to="/dashboard" replace /> : <NotFound />
+          }
+        />
+
       </Routes>
     </Router>
   );
