@@ -134,7 +134,7 @@ export default function Login() {
                        bg-gradient-to-r from-purple-500 to-violet-500
                        py-3 text-sm font-medium text-white
                        shadow-[0_0_30px_rgba(168,85,247,0.35)]
-                       hover:brightness-110 transition"
+                       hover:brightness-110 transition cursor-pointer"
           >
             Sign in
           </button>
