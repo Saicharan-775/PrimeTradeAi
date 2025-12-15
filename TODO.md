@@ -1,5 +1,0 @@
-- [ ] Replace custom CSS classes in Dashboard.jsx with Tailwind CSS equivalents
-- [ ] Ensure tasks are displayed in a clean card layout
-- [ ] Show title, description, and status badge for each task
-- [ ] Add a simple header with a Logout button
-- [ ] Maintain a professional admin dashboard look
