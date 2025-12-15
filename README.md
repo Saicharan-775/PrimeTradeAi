@@ -22,7 +22,7 @@ Deployed backend & frontend
 ## Architecture
 PrimeTradeAI/
 │
-├── backend/        # Node.js + Express REST API
+├── backend/        # Node.js + Express REST API 
 │   ├── controllers
 │   ├── routes
 │   ├── models
