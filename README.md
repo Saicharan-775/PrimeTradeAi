@@ -129,7 +129,7 @@ Backend (Railway)
  https://primetradeai-production-8072.up.railway.app
 
 Frontend (Vercel)
- https://primetrade-ai.vercel.app
+https://prime-trade-ai-hazel.vercel.app
  
 
 ## API Documentation
